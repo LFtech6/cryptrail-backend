@@ -1,0 +1,15 @@
+version: '3.8'
+services:
+  db:
+    image: postgres
+    container_name: cryptrail
+    environment:
+      POSTGRES_PASSWORD: admin123
+    volumes:
+      - ./init:/docker-entrypoint-initdb.d
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+volumes:
+  postgres_data:
