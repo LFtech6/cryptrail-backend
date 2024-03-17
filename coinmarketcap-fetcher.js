@@ -1,25 +1,50 @@
-// coinmarketcap-fetcher.js
+const express = require('express');
 const axios = require('axios');
-require('dotenv').config();
+const cors = require('cors');
 
-const COINMARKETCAP_API_URL = 'https://pro-api.coinmarketcap.com/v1/exchange';
-const COINMARKETCAP_API_KEY = process.env.COINMARKETCAP_API_KEY;
+const app = express();
 
-// Fetches exchange data from CoinMarketCap
-const fetchCryptoExchanges = async () => {
+console.log(Error);
+
+app.use(cors());
+
+// Endpoint para as moedas
+app.get('/coins', async (req, res) => {
   try {
-    const response = await axios.get(`${COINMARKETCAP_API_URL}/listings/latest`, {
-      headers: {
-        'X-CMC_PRO_API_KEY': COINMARKETCAP_API_KEY
+    const response = await axios.get('https://api.coingecko.com/api/v3/coins/markets', {
+      params: {
+        vs_currency: 'eur',
+        order: 'market_cap_desc',
+        per_page: 100,
+        page: 1,
+        sparkline: false,
       }
     });
-    return response.data.data; // Assuming the exchanges data is in the 'data' property
+    res.json(response.data);
   } catch (error) {
-    console.error('Error fetching exchanges data from CoinMarketCap:', error);
-    throw new Error('Failed to fetch exchanges data from CoinMarketCap');
+    console.error('Error fetching coins data:', error);
+    res.status(500).json({ message: 'Failed to fetch coins data' });
   }
-};
+});
 
-module.exports = {
-  fetchCryptoExchanges
-};
+// Endpoint para as exchanges
+app.get('/exchanges', async (req, res) => {
+  try {
+    const response = await axios.get('https://api.coingecko.com/api/v3/exchanges', {
+      params: {
+        per_page: 1000,
+        page: 1,
+      }
+    });
+    res.json(response.data);
+  } catch (error) {
+    console.error('Error fetching exchanges data:', error);
+    res.status(500).json({ message: 'Failed to fetch exchanges data' });
+  }
+});
+
+// Ligar o servidor numa porta disponível
+const server = app.listen(0, () => {
+  const actualPort = server.address().port;
+  console.log(`Server running on port ${actualPort}`);
+});

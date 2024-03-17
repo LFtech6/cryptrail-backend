@@ -65,8 +65,8 @@ app.post('/register', async (req, res) => {
   });
   
   
-  // Start the server
-  const port = process.env.PORT || 3000;
-  app.listen(port, () => {
-    console.log(`Server running on port ${port}`);
-  });
+// Start the server
+const server = app.listen(0, () => {
+  const actualPort = server.address().port; // This will give you the actual port the server is listening on
+  console.log(`Server running on port ${actualPort}`);
+});
