@@ -21,6 +21,108 @@ SET default_tablespace = '';
 SET default_table_access_method = heap;
 
 --
+-- Name: coins; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.coins (
+    id integer NOT NULL,
+    name character varying(255) NOT NULL,
+    symbol character varying(10) NOT NULL,
+    market_cap numeric(18,2),
+    current_price numeric(18,2),
+    last_updated timestamp with time zone,
+    image_url character varying(255),
+    price_change_percentage_24h character varying(255)
+);
+
+
+--
+-- Name: coins_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.coins_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: coins_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.coins_id_seq OWNED BY public.coins.id;
+
+
+--
+-- Name: conversion_rates; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.conversion_rates (
+    id integer NOT NULL,
+    base_currency character varying(10) NOT NULL,
+    target_currency character varying(10) NOT NULL,
+    rate numeric(18,8),
+    last_updated timestamp with time zone
+);
+
+
+--
+-- Name: conversion_rates_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.conversion_rates_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: conversion_rates_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.conversion_rates_id_seq OWNED BY public.conversion_rates.id;
+
+
+--
+-- Name: exchanges; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.exchanges (
+    id integer NOT NULL,
+    name character varying(255) NOT NULL,
+    url character varying(255) NOT NULL,
+    trade_volume_24h numeric(18,2),
+    image_url character varying(255)
+);
+
+
+--
+-- Name: exchanges_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.exchanges_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: exchanges_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.exchanges_id_seq OWNED BY public.exchanges.id;
+
+
+--
 -- Name: news; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -29,7 +131,8 @@ CREATE TABLE public.news (
     title character varying(255) NOT NULL,
     link character varying(255) NOT NULL,
     summary text,
-    published_at timestamp with time zone
+    published_at timestamp with time zone,
+    image_url character varying(255)
 );
 
 
@@ -88,6 +191,27 @@ ALTER SEQUENCE public.users_id_seq OWNED BY public.users.id;
 
 
 --
+-- Name: coins id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.coins ALTER COLUMN id SET DEFAULT nextval('public.coins_id_seq'::regclass);
+
+
+--
+-- Name: conversion_rates id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.conversion_rates ALTER COLUMN id SET DEFAULT nextval('public.conversion_rates_id_seq'::regclass);
+
+
+--
+-- Name: exchanges id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.exchanges ALTER COLUMN id SET DEFAULT nextval('public.exchanges_id_seq'::regclass);
+
+
+--
 -- Name: news id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -102,11 +226,59 @@ ALTER TABLE ONLY public.users ALTER COLUMN id SET DEFAULT nextval('public.users_
 
 
 --
+-- Name: coins coins_name_unique; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.coins
+    ADD CONSTRAINT coins_name_unique UNIQUE (name);
+
+
+--
+-- Name: coins coins_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.coins
+    ADD CONSTRAINT coins_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: conversion_rates conversion_rates_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.conversion_rates
+    ADD CONSTRAINT conversion_rates_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: exchanges exchanges_name_unique; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.exchanges
+    ADD CONSTRAINT exchanges_name_unique UNIQUE (name);
+
+
+--
+-- Name: exchanges exchanges_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.exchanges
+    ADD CONSTRAINT exchanges_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: news news_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.news
     ADD CONSTRAINT news_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: news news_title_unique; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.news
+    ADD CONSTRAINT news_title_unique UNIQUE (title);
 
 
 --

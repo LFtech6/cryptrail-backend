@@ -1,10 +1,9 @@
 // api.js
-require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const { Pool } = require('pg');
 const bcrypt = require('bcryptjs');
-const { fetchCryptoExchanges } = require('./coinmarketcap-fetcher');
+const axios = require('axios');
 
 const app = express();
 app.use(cors());
@@ -17,6 +16,7 @@ const pool = new Pool({
   password: 'admin123',
   port: 5432,
 });
+  
 
 app.post('/register', async (req, res) => {
   const { username, password, email } = req.body;
@@ -54,19 +54,87 @@ app.post('/register', async (req, res) => {
       res.status(500).json({ error: 'Internal Server Error' });
     }
   });
+
   
-  app.get('/cryptodata', async (req, res) => {
+  app.get('/news', async (req, res) => {
     try {
-      const exchangeData = await fetchCryptoExchanges();
-      res.json(exchangeData);
+      const result = await pool.query('SELECT * FROM news ORDER BY published_at DESC');
+      console.log(result.rows);
+      res.json(result.rows);
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      console.error('Error fetching news from the database:', error);
+      res.status(500).json({ message: 'Failed to fetch news from the database' });
     }
   });
   
+  app.get('/coins', async (req, res) => {
+    try {
+      const result = await pool.query('SELECT * FROM coins ORDER BY market_cap DESC LIMIT 100');
+      res.json(result.rows); 
+    } catch (error) {
+      console.error('Error fetching coins data from the database:', error);
+      res.status(500).json({ message: 'Failed to fetch coins data from the database' });
+    }
+  });
   
+  app.get('/exchanges', async (req, res) => {
+    try {
+      const result = await pool.query('SELECT * FROM exchanges LIMIT 1000');
+      res.json(result.rows);
+    } catch (error) {
+      console.error('Error fetching exchanges data from the database:', error);
+      res.status(500).json({ message: 'Failed to fetch exchanges data from the database' });
+    }
+  });
+  
+  app.get('/convert', async (req, res) => {
+    const { base, target } = req.query;
+    let { amount } = req.query;
+
+    if (!base || !target) {
+      return res.status(400).json({ message: 'Missing base or target query parameter' });
+    }
+    try {
+      const response = await axios.get('https://api.coingecko.com/api/v3/exchange_rates');
+      const rates = response.data.rates;
+  
+      const baseLower = base.toLowerCase();
+      const targetLower = target.toLowerCase();
+  
+      if (!rates[baseLower] || !rates[targetLower]) {
+        return res.status(404).json({ message: `Conversion rate not found for ${base} to ${target}` });
+      }
+  
+      amount = Number(amount);
+  if (isNaN(amount)) {
+    return res.status(400).json({ message: 'Invalid amount query parameter' });
+  }
+
+      const rate = rates[targetLower].value / rates[baseLower].value;
+      const convertedAmount = (amount * rate).toFixed(6); // Calculate the converted amount
+  
+      res.json({ convertedAmount });
+    } catch (error) {
+      console.error('Error during conversion:', error);
+      res.status(500).json({ message: 'Failed to perform conversion' });
+    }
+  });
+
+  app.get('/rates', async (req, res) => {
+    try {
+        const response = await axios.get('https://api.coingecko.com/api/v3/exchange_rates');
+        const rates = response.data.rates;
+        res.json(rates);
+    } catch (error) {
+        console.error('Error fetching rates:', error);
+        res.status(500).json({ message: 'Failed to fetch rates' });
+    }
+});
+
+  
+
 // Start the server
-const server = app.listen(0, () => {
-  const actualPort = server.address().port; // This will give you the actual port the server is listening on
-  console.log(`Server running on port ${actualPort}`);
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
 });

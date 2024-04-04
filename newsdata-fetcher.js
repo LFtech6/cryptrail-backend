@@ -3,7 +3,6 @@ const axios = require('axios');
 const cors = require('cors');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
 
 const NEWSDATA_API_URL = 'https://newsdata.io/api/1/news';
 const NEWSDATA_API_KEY = 'pub_38980b5e753c820d59cd76830765c65d241e8';
@@ -27,6 +26,8 @@ app.get('/news', async (req, res) => {
   }
 });
 
+const PORT = process.env.PORT || 4001;
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+    console.log(`Server running on port ${PORT}`);
 });
+
