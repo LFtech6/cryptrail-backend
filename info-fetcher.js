@@ -53,7 +53,7 @@ async function fetchCoins() {
     const response = await axios.get('https://api.coingecko.com/api/v3/coins/markets?vs_currency=eur', {
     params: {
       order: 'market_cap_desc',
-      per_page: 3700,
+      per_page: 5000,
       page: 1,
       sparkline: false,
     }
@@ -90,7 +90,7 @@ async function fetchExchanges (){
   try {
     const response = await axios.get('https://api.coingecko.com/api/v3/exchanges?vs_currency=eur', {
     params: {
-      per_page: 1000,
+      per_page: 5000,
       page: 1,
     }
   });
@@ -118,6 +118,27 @@ async function fetchExchanges (){
 }
 };
 
+async function fetchAndStoreRates() {
+  console.log('Fetching exchange rates...');
+  try {
+    const response = await axios.get('https://api.coingecko.com/api/v3/exchange_rates');
+    const rates = response.data.rates;
+
+    for (const [currency, data] of Object.entries(rates)) {
+      console.log(`Inserting rate for ${currency}:`, data.value);
+      await pool.query(`
+        INSERT INTO conversion_rates (base_currency, target_currency, rate, last_updated) 
+        VALUES ($1, $2, $3, NOW())
+        ON CONFLICT (base_currency, target_currency) DO UPDATE SET 
+        rate = EXCLUDED.rate, last_updated = NOW()`,
+        ['BTC', currency, data.value] // Assuming BTC as the base currency for all rates
+      );
+    }
+  } catch (error) {
+    console.error('Error fetching and storing rates:', error);
+  }
+};
+
 
 
 (async () => {
@@ -125,6 +146,7 @@ async function fetchExchanges (){
     //await fetchNews();
     //await fetchCoins();
     //await fetchExchanges();
+    //await fetchAndStoreRates();
   } catch (err) {
     console.error(err);
   }
@@ -134,58 +156,5 @@ setInterval(() => {
   //fetchNews().catch(err => console.error(err));
   //fetchCoins().catch(err => console.error(err));
   //fetchExchanges().catch(err => console.error(err));
+  //fetchAndStoreRates().catch(err => console.error(err));
 }, 24 * 60 * 60 * 1000);
-
-
-/* app.post('/send-message', async (req, res) => {
-  const userMessage = req.body.message;
-  
-  const requestBody = {
-    model: "gpt-4",
-    messages: [
-      {
-        role: "user",
-        content: userMessage
-      }
-    ]
-  };
-  
-  try {
-    const response = await callOpenAIWithRetry(requestBody);
-    const gptResponse = response.choices[0].message.content.trim();
-    res.json({ message: gptResponse });
-  } catch (error) {
-    if (error.response && error.response.status === 429) {
-      console.error('Quota exceeded for OpenAI API:', error.response.data);
-      res.status(429).json({ error: "We've hit our usage limit for now, please try again later." });
-    } else {
-      // Enhanced error logging
-      console.error('Error calling OpenAI:', error.response ? error.response.data : error);
-      res.status(500).json({ error: 'Something went wrong, please try again.', details: error.message });
-    }
-  }
-});
-
-async function callOpenAIWithRetry(requestBody, retryCount = 3, baseInterval = 1000) {
-  try {
-    const response = await axios.post('https://api.openai.com/v1/chat/completions', requestBody, {
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${OPENAI_API_KEY}`
-    }
-  });
-  return response.data;
-} catch (error) {
-  console.log(error);
-  return;
-  if (retryCount <= 0 || (error.response && error.response.status === 429)) {
-    throw error;
-  }
-  
-  const waitTime = baseInterval * Math.pow(2, 3 - retryCount);
-  console.log(`Request failed, retrying in ${waitTime}ms...`);
-  await new Promise(resolve => setTimeout(resolve, waitTime));
-  
-  return callOpenAIWithRetry(requestBody, retryCount - 1, baseInterval);
-}
-} */

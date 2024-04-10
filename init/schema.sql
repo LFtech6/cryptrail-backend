@@ -97,7 +97,7 @@ CREATE TABLE public.exchanges (
     id integer NOT NULL,
     name character varying(255) NOT NULL,
     url character varying(255) NOT NULL,
-    trade_volume_24h numeric(18,2),
+    trust_score numeric(18,2),
     image_url character varying(255)
 );
 
@@ -279,6 +279,14 @@ ALTER TABLE ONLY public.news
 
 ALTER TABLE ONLY public.news
     ADD CONSTRAINT news_title_unique UNIQUE (title);
+
+
+--
+-- Name: conversion_rates unique_base_target_constraint; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.conversion_rates
+    ADD CONSTRAINT unique_base_target_constraint UNIQUE (base_currency, target_currency);
 
 
 --

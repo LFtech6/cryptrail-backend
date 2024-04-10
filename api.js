@@ -55,6 +55,21 @@ app.post('/register', async (req, res) => {
     }
   });
 
+  // app.get('/user/:id', async (req, res) => {
+  //   const { id } = req.params;
+  //   try {
+  //     const result = await pool.query('SELECT username FROM users WHERE id = $1', [id]);
+  //     if (result.rows.length > 0) {
+  //       res.json(result.rows[0]);
+  //     } else {
+  //       res.status(404).json({ error: 'User not found' });
+  //     }
+  //   } catch (error) {
+  //     console.error('Error fetching user details:', error);
+  //     res.status(500).json({ message: 'Failed to fetch user details' });
+  //   }
+  // });
+
   
   app.get('/news', async (req, res) => {
     try {
@@ -69,7 +84,7 @@ app.post('/register', async (req, res) => {
   
   app.get('/coins', async (req, res) => {
     try {
-      const result = await pool.query('SELECT * FROM coins ORDER BY market_cap DESC LIMIT 100');
+      const result = await pool.query('SELECT * FROM coins ORDER BY market_cap DESC LIMIT 5000');
       res.json(result.rows); 
     } catch (error) {
       console.error('Error fetching coins data from the database:', error);
@@ -79,7 +94,7 @@ app.post('/register', async (req, res) => {
   
   app.get('/exchanges', async (req, res) => {
     try {
-      const result = await pool.query('SELECT * FROM exchanges LIMIT 1000');
+      const result = await pool.query('SELECT * FROM exchanges LIMIT 5000');
       res.json(result.rows);
     } catch (error) {
       console.error('Error fetching exchanges data from the database:', error);
@@ -87,50 +102,58 @@ app.post('/register', async (req, res) => {
     }
   });
   
-  app.get('/convert', async (req, res) => {
-    const { base, target } = req.query;
-    let { amount } = req.query;
-
-    if (!base || !target) {
-      return res.status(400).json({ message: 'Missing base or target query parameter' });
-    }
+  app.get('/rates', async (req, res) => {
     try {
-      const response = await axios.get('https://api.coingecko.com/api/v3/exchange_rates');
-      const rates = response.data.rates;
+      const result = await pool.query('SELECT * FROM conversion_rates');
+      const formattedRates = result.rows.reduce((acc, curr) => {
+        acc[curr.target_currency] = { ...acc[curr.target_currency], rate: curr.rate, name: curr.target_currency.toUpperCase() };
+        return acc;
+      }, {});
+      res.json(formattedRates);
+    } catch (error) {
+      console.error('Error fetching rates from the database:', error);
+      res.status(500).json({ message: 'Failed to fetch rates from the database' });
+    }
+  });
+   
+  app.get('/convert', async (req, res) => {
+    const { base, target, amount } = req.query;
   
-      const baseLower = base.toLowerCase();
-      const targetLower = target.toLowerCase();
+    if (!base || !target || !amount) {
+      return res.status(400).json({ message: 'Missing required query parameters' });
+    }
   
-      if (!rates[baseLower] || !rates[targetLower]) {
-        return res.status(404).json({ message: `Conversion rate not found for ${base} to ${target}` });
+    try {
+      // Convert base currency to BTC
+      let baseToBTCRate = 1; // Default to 1 if base currency is BTC
+      if (base.toLowerCase() !== 'btc') {
+        const baseToBTCResult = await pool.query('SELECT rate FROM conversion_rates WHERE target_currency = $1', [base.toLowerCase()]);
+        if (baseToBTCResult.rows.length === 0) {
+          return res.status(404).json({ message: `Rate not found for base currency: ${base}` });
+        }
+        baseToBTCRate = 1 / parseFloat(baseToBTCResult.rows[0].rate);
       }
   
-      amount = Number(amount);
-  if (isNaN(amount)) {
-    return res.status(400).json({ message: 'Invalid amount query parameter' });
-  }
-
-      const rate = rates[targetLower].value / rates[baseLower].value;
-      const convertedAmount = (amount * rate).toFixed(6); // Calculate the converted amount
+      // Convert BTC to target currency
+      let btcToTargetRate = 1; // Default to 1 if target currency is BTC
+      if (target.toLowerCase() !== 'btc') {
+        const btcToTargetResult = await pool.query('SELECT rate FROM conversion_rates WHERE target_currency = $1', [target.toLowerCase()]);
+        if (btcToTargetResult.rows.length === 0) {
+          return res.status(404).json({ message: `Rate not found for target currency: ${target}` });
+        }
+        btcToTargetRate = parseFloat(btcToTargetResult.rows[0].rate);
+      }
+  
+      // Perform conversion
+      const convertedAmount = (parseFloat(amount) * baseToBTCRate * btcToTargetRate).toFixed(6);
   
       res.json({ convertedAmount });
     } catch (error) {
       console.error('Error during conversion:', error);
-      res.status(500).json({ message: 'Failed to perform conversion' });
+      res.status(500).json({ message: 'Failed to perform conversion', error: error.message });
     }
   });
-
-  app.get('/rates', async (req, res) => {
-    try {
-        const response = await axios.get('https://api.coingecko.com/api/v3/exchange_rates');
-        const rates = response.data.rates;
-        res.json(rates);
-    } catch (error) {
-        console.error('Error fetching rates:', error);
-        res.status(500).json({ message: 'Failed to fetch rates' });
-    }
-});
-
+  
   
 
 // Start the server
