@@ -56,6 +56,7 @@ async function fetchCoins() {
       per_page: 5000,
       page: 1,
       sparkline: false,
+      vs_currency: 'eur',
     }
   });
   if (response.data) {
@@ -85,38 +86,41 @@ async function fetchCoins() {
 }
 };
 
-async function fetchExchanges (){
+async function fetchExchanges() {
   console.log('Fetching exchanges...');
   try {
-    const response = await axios.get('https://api.coingecko.com/api/v3/exchanges?vs_currency=eur', {
-    params: {
-      per_page: 5000,
-      page: 1,
-    }
-  });
-  if (response.data) {
-    const exchanges = response.data;
-    console.log('Fetched exchanges:', exchanges.length); 
-    for (let exchange of exchanges) {
-      if (exchange.url) {
-        console.log('Inserting exchanges:', exchange);
-        await pool.query(`INSERT INTO exchanges (name, url, trust_score, image_url) 
-        VALUES ($1, $2, $3, $4)
-        ON CONFLICT (name) DO UPDATE SET
-        url = EXCLUDED.url,
-        trust_score = EXCLUDED.trust_score,
-        image_url = EXCLUDED.image_url`,
-        [exchange.name, exchange.url, exchange.trust_score, exchange.image]
-        );
-      } else {
-        console.log('Skipping exchange with null url:', exchange);
+    const response = await axios.get('https://api.coingecko.com/api/v3/exchanges', {
+      params: {
+        vs_currency: 'eur',
+        per_page: 5000,
+        page: 1,
+      },
+    });
+    if (response.data) {
+      const exchanges = response.data;
+      console.log('Fetched exchanges:', exchanges.length);
+      for (let exchange of exchanges) {
+        if (exchange.url) {
+          console.log('Inserting exchange:', exchange.name);
+          await pool.query(`INSERT INTO exchanges (name, url, trust_score, image_url, trade_volume_24h_btc) 
+          VALUES ($1, $2, $3, $4, $5)
+          ON CONFLICT (name) DO UPDATE SET
+          url = EXCLUDED.url,
+          trust_score = EXCLUDED.trust_score,
+          image_url = EXCLUDED.image_url,
+          trade_volume_24h_btc = EXCLUDED.trade_volume_24h_btc`,
+          [exchange.name, exchange.url, exchange.trust_score, exchange.image, exchange.trade_volume_24h_btc]
+          );
+        } else {
+          console.log('Skipping exchange with null url:', exchange.name);
+        }
       }
     }
+  } catch (error) {
+    console.error('Error fetching exchanges data:', error);
   }
-} catch (error) {
-  console.error('Error fetching exchanges data:', error);
-}
 };
+
 
 async function fetchAndStoreRates() {
   console.log('Fetching exchange rates...');

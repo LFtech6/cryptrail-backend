@@ -57,6 +57,73 @@ ALTER SEQUENCE public.coins_id_seq OWNED BY public.coins.id;
 
 
 --
+-- Name: conversations; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.conversations (
+    id integer NOT NULL,
+    user_id integer NOT NULL,
+    content jsonb NOT NULL,
+    created_at timestamp without time zone DEFAULT now()
+);
+
+
+--
+-- Name: conversations_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.conversations_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: conversations_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.conversations_id_seq OWNED BY public.conversations.id;
+
+
+--
+-- Name: conversion_history; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.conversion_history (
+    id integer NOT NULL,
+    user_id integer NOT NULL,
+    base_currency character varying(255),
+    target_currency character varying(255),
+    base_amount numeric,
+    target_amount numeric,
+    created_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP
+);
+
+
+--
+-- Name: conversion_history_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.conversion_history_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: conversion_history_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.conversion_history_id_seq OWNED BY public.conversion_history.id;
+
+
+--
 -- Name: conversion_rates; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -98,7 +165,8 @@ CREATE TABLE public.exchanges (
     name character varying(255) NOT NULL,
     url character varying(255) NOT NULL,
     trust_score numeric(18,2),
-    image_url character varying(255)
+    image_url character varying(255),
+    trade_volume_24h_btc numeric
 );
 
 
@@ -157,6 +225,38 @@ ALTER SEQUENCE public.news_id_seq OWNED BY public.news.id;
 
 
 --
+-- Name: pins; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.pins (
+    id integer NOT NULL,
+    user_id integer,
+    pin character varying(6) NOT NULL,
+    created_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP
+);
+
+
+--
+-- Name: pins_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.pins_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: pins_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.pins_id_seq OWNED BY public.pins.id;
+
+
+--
 -- Name: users; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -198,6 +298,20 @@ ALTER TABLE ONLY public.coins ALTER COLUMN id SET DEFAULT nextval('public.coins_
 
 
 --
+-- Name: conversations id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.conversations ALTER COLUMN id SET DEFAULT nextval('public.conversations_id_seq'::regclass);
+
+
+--
+-- Name: conversion_history id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.conversion_history ALTER COLUMN id SET DEFAULT nextval('public.conversion_history_id_seq'::regclass);
+
+
+--
 -- Name: conversion_rates id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -216,6 +330,13 @@ ALTER TABLE ONLY public.exchanges ALTER COLUMN id SET DEFAULT nextval('public.ex
 --
 
 ALTER TABLE ONLY public.news ALTER COLUMN id SET DEFAULT nextval('public.news_id_seq'::regclass);
+
+
+--
+-- Name: pins id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.pins ALTER COLUMN id SET DEFAULT nextval('public.pins_id_seq'::regclass);
 
 
 --
@@ -239,6 +360,22 @@ ALTER TABLE ONLY public.coins
 
 ALTER TABLE ONLY public.coins
     ADD CONSTRAINT coins_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: conversations conversations_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.conversations
+    ADD CONSTRAINT conversations_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: conversion_history conversion_history_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.conversion_history
+    ADD CONSTRAINT conversion_history_pkey PRIMARY KEY (id);
 
 
 --
@@ -282,11 +419,27 @@ ALTER TABLE ONLY public.news
 
 
 --
+-- Name: pins pins_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.pins
+    ADD CONSTRAINT pins_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: conversion_rates unique_base_target_constraint; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.conversion_rates
     ADD CONSTRAINT unique_base_target_constraint UNIQUE (base_currency, target_currency);
+
+
+--
+-- Name: pins user_id_unique; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.pins
+    ADD CONSTRAINT user_id_unique UNIQUE (user_id);
 
 
 --
@@ -311,6 +464,30 @@ ALTER TABLE ONLY public.users
 
 ALTER TABLE ONLY public.users
     ADD CONSTRAINT users_username_key UNIQUE (username);
+
+
+--
+-- Name: conversations conversations_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.conversations
+    ADD CONSTRAINT conversations_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id);
+
+
+--
+-- Name: conversion_history conversion_history_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.conversion_history
+    ADD CONSTRAINT conversion_history_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id);
+
+
+--
+-- Name: pins pins_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.pins
+    ADD CONSTRAINT pins_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE;
 
 
 --
