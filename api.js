@@ -218,6 +218,29 @@ app.get('/getConversions/:userId', async (req, res) => {
   }
 });
 
+app.delete('/conversions/:userId', async (req, res) => {
+  const userId = parseInt(req.params.userId, 10);
+  console.log(`Received userId: ${req.params.userId}, Parsed userId: ${userId}`);
+
+  if (isNaN(userId)) {
+    console.error(`Invalid user ID format: ${req.params.userId}`);
+    return res.status(400).json({ message: "Invalid user ID format" });
+  }
+
+  try {
+    const deleteResult = await pool.query('DELETE FROM conversion_history WHERE user_id = $1', [userId]);
+    if (deleteResult.rowCount > 0) {
+      res.status(200).json({ message: 'Conversion history deleted successfully' });
+    } else {
+      res.status(404).json({ message: 'No conversion history found for the user' });
+    }
+  } catch (error) {
+    console.error('Database or server error:', error);
+    res.status(500).json({ message: 'Failed to delete conversion history', error: error.message });
+  }
+});
+
+
 
   
   app.get('/news', async (req, res) => {
