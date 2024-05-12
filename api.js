@@ -27,7 +27,7 @@ app.post('/register', async (req, res) => {
 
   try {
     const hashedPassword = await bcrypt.hash(password, 10);
-    const randomPin = Math.floor(1000 + Math.random() * 9000).toString();
+    const randomPin = await bcrypt.hash (Math.floor(1000 + Math.random() * 9000).toString());
 
     // Start a transaction
     await pool.query('BEGIN');
