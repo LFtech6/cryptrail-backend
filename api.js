@@ -21,13 +21,15 @@ const pool = new Pool({
 app.post('/register', async (req, res) => {
   const { username, password, email } = req.body;
 
+  console.log('Received data:', { username, password, email }); // Log incoming data
+
   if (!username || !password || !email) {
     return res.status(400).json({ error: 'Missing required fields' });
   }
 
   try {
     const hashedPassword = await bcrypt.hash(password, 10);
-    const randomPin = await bcrypt.hash (Math.floor(1000 + Math.random() * 9000).toString());
+    const randomPin = Math.floor(1000 + Math.random() * 9000).toString();
 
     // Start a transaction
     await pool.query('BEGIN');
@@ -51,10 +53,11 @@ app.post('/register', async (req, res) => {
     res.status(201).json({ userId: userId, pin: randomPin });
   } catch (err) {
     await pool.query('ROLLBACK');
-    console.error(err);
+    console.error('Error during registration:', err);
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });
+
 
   app.post('/login', async (req, res) => {
     const { email, password } = req.body;
